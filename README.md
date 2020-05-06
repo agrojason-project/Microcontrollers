@@ -31,7 +31,7 @@ Finally, the wet pad is a small piece of paper that is needed for the cooling sy
 First of all, the greenhouse has on one side the fans which push air out of the greenhouse. 
 As a result of this, the air enters from the opposite side of the greenhouse, 
 where the wet pad that we described shortly above, exists. Due to the
-fact that the pad is wet , the air entering into the greenhouse is cool. This leads to 
+fact that the pad is wet, the air entering into the greenhouse is cool. This leads to 
 a decrease of temperature into the greenhouse and therefore our goal for implementing 
 an efficient cooling system is achieved.
 
@@ -53,7 +53,7 @@ The heating system consists of:
 
 This system is energy efficient because, unlike air, water tends to retain its temperature and this helps to keep the greenhouse warm for longer. Another advantage is that the plants are heated gradually (not instantly) and the heat is well distributed (not in one spot).
 
-####Electrical plan for temperature control (both cooling and heating)
+#### Electrical plan for temperature control (both cooling and heating)
 
 ![Image](readme_images/plan_temp.png)
 
