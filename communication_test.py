@@ -37,26 +37,22 @@ def read_serial(ser):  #read a string from the serial line
     string_n = b.decode()       # decode byte string into Unicode
     return string_n.rstrip()    # remove \n and \r
 
-def read_float(ser): #read a float from the serial line
-    string = read_serial(ser)
-    return float(string)
-
 def write_in_csv(ser,file_name,fieldnames):
     while read_serial(ser) != "hi": # Wait for the serial line to be ready
         pass
     date = time_request()   
     #Temperature
-    Temperature_in = read_float(ser)
-    Temperature_out = read_float(ser)
+    Temperature_in = float(read_serial(ser))
+    Temperature_out = float(read_serial(ser))
     #Humidity
-    Humidity_in = read_float(ser)
-    Humidity_out = read_float(ser)
+    Humidity_in = float(read_serial(ser))
+    Humidity_out = float(read_serial(ser))
     #ligth
-    light = read_float(ser)
+    light = float(read_serial(ser))
     #soil moisture
-    soil_moisture = read_float(ser)
+    soil_moisture = float(read_serial(ser))
     #ph
-    ph = read_float(ser)
+    ph = float(read_serial(ser))
     #open file to write
     with open(file_name, mode='a', newline='') as results_file:
         # csv writer object
