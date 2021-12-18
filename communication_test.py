@@ -3,7 +3,7 @@ import serial
 import csv
 from datetime import datetime
 from pytz import timezone
-from time import  strptime, mktime
+from time import  strptime, mktime,time
 
 ############################    MAIN    ############################################
 def main():
@@ -19,13 +19,13 @@ def main():
     old_time = 0
     while True:
         # Time 
-        time = time_request_float()
-        if (time - old_time > 3600) and (old_time != 0): #for the last Sunday the March
-            old_time = time #GET THE TIME  
-        elif old_time - time> 3300:  #for the last Sunday the October
-            old_time = time #GET THE TIME 
-        elif time - old_time > 299:                    
-            old_time = time #GET THE TIME            
+        tm = time()
+        if (tm - old_time > 3600) and (old_time != 0): #for the last Sunday the March
+            old_time = tm #GET THE TIME  
+        elif old_time - tm> 3300:  #for the last Sunday the October
+            old_time = tm #GET THE TIME 
+        elif tm - old_time > 299:                    
+            old_time = tm #GET THE TIME            
             write_in_csv(ser,file_name,fieldnames)            
         #continue 
     ser.close() 
@@ -39,8 +39,7 @@ def read_serial(ser):  #read a string from the serial line
 
 def write_in_csv(ser,file_name,fieldnames):
     while read_serial(ser) != "hi": # Wait for the serial line to be ready
-        pass
-    date = time_request()   
+        pass  
     #Temperature
     Temperature_in = float(read_serial(ser))
     Temperature_out = float(read_serial(ser))
@@ -53,6 +52,8 @@ def write_in_csv(ser,file_name,fieldnames):
     soil_moisture = float(read_serial(ser))
     #ph
     ph = float(read_serial(ser))
+    #data and time
+    date = time_request() 
     #open file to write
     with open(file_name, mode='a', newline='') as results_file:
         # csv writer object
@@ -69,15 +70,6 @@ def time_request(): #return the date and time in the format of the csv file
     fmt = "%Y/%m/%d %H:%M:%S"
     now_time = datetime.now(timezone('Europe/Athens')) #get the current time
     return now_time.strftime(fmt) #return the current time in the format of the csv file
-
-def time_request_float(): #return the date and time in float format
-    conn = http.client.HTTPConnection('google.com')
-    conn.request("GET", "/")
-    r = conn.getresponse()
-    r.getheaders() #Get all http headers
-    ts = r.getheader('date') # Get the date part of the http header
-    ltime = strptime(ts[5:25], "%d %b %Y %H:%M:%S") 
-    return (mktime(ltime) + 7200) #mktime returns the number of seconds since the epoch and we need to add 2 hours to get the correct time
 
 ######################    START THE PROGRAM    #####################################
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import csv
 from threading import Thread
 from datetime import datetime
 from pytz import timezone
-from time import  sleep, strptime
+from time import  sleep, strptime,time
 
 ############################    MAIN    ############################################
 def main():
@@ -46,8 +46,7 @@ def thread_function(ser,file_name,fieldnames):
     while True:
         # Time          
         while read_serial(ser) != "hi": # Wait for the serial line to be ready
-            pass
-        date = time_request()   
+            pass  
         #Temperature
         Temperature_in = float(read_serial(ser))
         Temperature_out = float(read_serial(ser))
@@ -60,6 +59,8 @@ def thread_function(ser,file_name,fieldnames):
         soil_moisture = float(read_serial(ser))
         #ph
         ph = float(read_serial(ser))
+        #data and time
+        date = time_request() 
         #open file to write
         with open(file_name, mode='a', newline='') as results_file:
             # csv writer object
