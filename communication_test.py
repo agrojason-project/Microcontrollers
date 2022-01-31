@@ -3,7 +3,19 @@ import serial
 import csv
 from datetime import datetime
 from pytz import timezone
-from time import  strptime, mktime,time
+from time import  strptime, time
+
+import requests
+from requests.exceptions import HTTPError
+from auth.bearer import AuthBearer
+from utils.date import DateTime
+from models.sensor_data import SensorData
+
+BASE_URL = "https://agrojason.herokuapp.com/api"
+USER_TOKEN = None
+USER_EMAIL = "a@a.com"
+USER_PASSWORD = "1234"
+
 
 ############################    MAIN    ############################################
 def main():
@@ -26,7 +38,8 @@ def main():
             old_time = tm #GET THE TIME 
         elif tm - old_time > 299:                    
             old_time = tm #GET THE TIME            
-            write_in_csv(ser,file_name,fieldnames)            
+            sensor(ser,file_name,fieldnames)
+            print("Data sent")            
         #continue 
     ser.close() 
 
@@ -37,7 +50,7 @@ def read_serial(ser):  #read a string from the serial line
     string_n = b.decode()       # decode byte string into Unicode
     return string_n.rstrip()    # remove \n and \r
 
-def write_in_csv(ser,file_name,fieldnames):
+def sensor(ser,file_name,fieldnames):
     while read_serial(ser) != "hi": # Wait for the serial line to be ready
         pass  
     #Temperature
@@ -52,6 +65,8 @@ def write_in_csv(ser,file_name,fieldnames):
     soil_moisture = float(read_serial(ser))
     #ph
     ph = float(read_serial(ser))
+    #send the data in the web app
+    send_data(Temperature_in,Temperature_out, Humidity_in,Humidity_out,light, soil_moisture, ph)
     #data and time
     date = time_request() 
     #open file to write
@@ -70,6 +85,45 @@ def time_request(): #return the date and time in the format of the csv file
     fmt = "%Y/%m/%d %H:%M:%S"
     now_time = datetime.now(timezone('Europe/Athens')) #get the current time
     return now_time.strftime(fmt) #return the current time in the format of the csv file
+
+
+def send_data(Temperature_in,Temperature_out, Humidity_in,Humidity_out,light, soil_moisture, ph):
+    utc_now = DateTime.get_utc_now()
+    sensorData = SensorData(utc_now, Temperature_in,Temperature_out, Humidity_in,Humidity_out,light, soil_moisture, ph)
+    res = send_sensor_data(sensorData)
+    if (res is not None): return
+    login(USER_EMAIL, USER_PASSWORD)
+    if (USER_TOKEN is None):
+        return
+    send_sensor_data(sensorData)
+
+def login(email: str, password: str):
+    try:
+        res = requests.post(f"{BASE_URL}/users/login", data = {"email": email, "password": password})
+        res.raise_for_status()
+    except HTTPError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+        return None
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+        return None
+    else:
+        global USER_TOKEN
+        USER_TOKEN = res.json()['token']
+
+def send_sensor_data(sensorData: SensorData):
+    try:
+        if (USER_TOKEN is None): return None
+        res = requests.post(f"{BASE_URL}/sensors", data = vars(sensorData), auth=AuthBearer(USER_TOKEN))
+    except HTTPError as http_err:
+        print(f'HTTP error occurred: {http_err}')
+        return None
+    except Exception as err:
+        print(f'Other error occurred: {err}')
+        return None
+    else:
+        print(res.json())
+
 
 ######################    START THE PROGRAM    #####################################
 if __name__ == '__main__':
