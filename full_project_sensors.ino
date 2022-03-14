@@ -10,7 +10,7 @@ const int pResistor = A3; // Photoresistor at Arduino analog pin A3
 const int pH_pin = A2;  // pH at Arduino analog pin A2
 //Variables
 unsigned long int avgValue; 
-int buf[10],temp;
+int buf[10],temp,op;
 
 DHT dht = DHT(TH, DHTTYPE);
 
@@ -18,6 +18,7 @@ void setup() {
   pinMode(TH, INPUT);
   pinMode(pResistor, INPUT);
   Serial.begin(9600);
+  Serial.println("Start");
   dht.begin();
 }
 
@@ -54,19 +55,22 @@ void loop() {
   pHVol = (float)avgValue*5.0/1024/6;
   phValue = -5.56 * pHVol + 26.89;
 
-  Serial.print("The temperature now is: ");
-  Serial.println(temperature);
-  Serial.print("The humidity now is: ");
-  Serial.println(hum);
-  
-  Serial.print("Photoresistor value: ");
-  Serial.println(photoresistor_value);
+  op = Serial.read();
+  if (op == '2'){
+//    Serial.print("The temperature now is: ");
+    Serial.println(temperature);
+    Serial.println(temperature);
+//    Serial.print("The humidity now is: ");
+    Serial.println(hum);
+    Serial.println(hum);
+//    Serial.print("Photoresistor value: ");
+    Serial.println(photoresistor_value);
 
-  Serial.print("Soil humidity value: ");
-  Serial.println(final_soil_value);
-
-  Serial.print("pH = ");
-  Serial.println(phValue);
-  
+//    Serial.print("pH = ");
+    Serial.println(phValue);
+    
+//    Serial.print("Soil humidity value: ");
+    Serial.println(final_soil_value);
+  }
   delay(5000);
 }
