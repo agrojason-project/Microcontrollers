@@ -1,6 +1,8 @@
 import serial 
 import csv
 import requests
+import sys 
+import select
 from time import time
 from requests.exceptions import HTTPError
 from models.sensor_data import SensorData
@@ -12,7 +14,10 @@ BASE_URL = "https://agrojason.herokuapp.com/api"
 USER_TOKEN = None
 USER_EMAIL = "a@a.com"
 USER_PASSWORD = "1234"
+FAN = "1"
 DATA = "2"
+IDEAL = "3" 
+
 
 
 ############################    MAIN    ############################################
@@ -30,17 +35,24 @@ def main():
             writer.writeheader()
     #make the do while loop
     old_time = 0
+    op = ""
     while True:
+        i= select.select( [sys.stdin], [], [], 5 )
+        if (i):
+            op = sys.stdin.readline().strip()   
+            if op == "exit":
+                break
+            sensor(ser,file_name,fieldnames,date,op)     
+            op = ""  
         # Time 
         tm = time()
         if (tm - old_time > 3600) and (old_time != 0): #for the last Sunday the March
             old_time = tm #GET THE TIME  
         elif old_time - tm> 3300:  #for the last Sunday the October
             old_time = tm #GET THE TIME 
-        elif tm - old_time > 29: #299:                    
+        elif tm - old_time > 299: #299:                    
             old_time = tm #GET THE TIME            
-            sensor(ser,file_name,fieldnames,date)   
-        #continue 
+            sensor(ser,file_name,fieldnames,date,DATA)    
     ser.close() 
 
 
@@ -53,37 +65,45 @@ def read_serial(ser):  #read a string from the serial line
     return string_n.rstrip()    # remove \n and \r
 
 
-def sensor(ser,file_name,fieldnames,date):
-    
-    ser.write(DATA.encode())
-    timestamp = date.get_utc_now()
-    temperature_in = float(read_serial(ser))
-    temperature_out = float(read_serial(ser))
-    humidity_in = float(read_serial(ser))
-    humidity_out = float(read_serial(ser))
-    light = float(read_serial(ser))
-    pH = float(read_serial(ser))
-    humidity_substrate = float(read_serial(ser))
-    
-    
-    #send the data in the web app
-    data = SensorData(timestamp, temperature_in, temperature_out, humidity_in, humidity_out, light, pH, humidity_substrate) 
-    send_data(data)
-    #open file to write
-    with open(file_name, mode='a', newline='') as results_file:
-        # csv writer object
-        writer = csv.DictWriter(results_file, fieldnames=fieldnames, dialect='excel')
-        writer.writerow({
-            'Date - Time': timestamp,
-            'Temperature In': temperature_in,
-            'Temperature Out': temperature_out,
-            'Humidity In': humidity_in,
-            'Humidity_out': humidity_out,
-            'Light': light,
-            'Soil Moisture': humidity_substrate,
-            'Ph': pH
-        })
-
+def sensor(ser,file_name,fieldnames,date,op):
+    ser.write(op.encode())
+    if op == FAN:
+        tmp = input()
+        ser.write(tmp.encode)   # 0:Close, 1:Open 
+        if read_serial(ser):    # 0:Error, 1:Succeses
+            print("FAN Succeses!!")
+        else:
+            print("FAN Error!!")
+    elif op == DATA:
+        timestamp = date.get_utc_now()
+        temperature_in = float(read_serial(ser))
+        temperature_out = float(read_serial(ser))
+        humidity_in = float(read_serial(ser))
+        humidity_out = float(read_serial(ser))
+        light = float(read_serial(ser))
+        pH = float(read_serial(ser))
+        humidity_substrate = float(read_serial(ser))
+        #send the data in the web app
+        data = SensorData(timestamp, temperature_in, temperature_out, humidity_in, humidity_out, light, pH, humidity_substrate) 
+        send_data(data)
+        #open file to write
+        with open(file_name, mode='a', newline='') as results_file:
+            # csv writer object
+            writer = csv.DictWriter(results_file, fieldnames=fieldnames, dialect='excel')
+            writer.writerow({
+                'Date - Time': timestamp,
+                'Temperature In': temperature_in,
+                'Temperature Out': temperature_out,
+                'Humidity In': humidity_in,
+                'Humidity_out': humidity_out,
+                'Light': light,
+                'Soil Moisture': humidity_substrate,
+                'Ph': pH
+            })
+    elif op == IDEAL:
+        pass
+    else:
+        print("## Not good Argument!!!")
 
 def send_data(sensorData : SensorData):
     res = send_sensor_data(sensorData)
