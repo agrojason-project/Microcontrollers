@@ -3,11 +3,17 @@
 
 #define TH 2 // Temp & Hum at Arduino digital pin D2
 #define DHTTYPE DHT11
+#define FAN_PIN 3
+
+#define FAN '1'
+#define DATA '2'
+#define IDEAL '3'
 
 //Constants
 const int pResistor = A3; // Photoresistor at Arduino analog pin A3
-
 const int pH_pin = A2;  // pH at Arduino analog pin A2
+const int soil_pin = A1; //connect soil humidity sensor to analog A1
+
 //Variables
 unsigned long int avgValue; 
 int buf[10],temp,op;
@@ -17,6 +23,9 @@ DHT dht = DHT(TH, DHTTYPE);
 void setup() {
   pinMode(TH, INPUT);
   pinMode(pResistor, INPUT);
+  pinMode(pH_pin, INPUT);
+  pinMode(soil_pin, INPUT);
+  pinMode(FAN_PIN, OUTPUT);
   Serial.begin(9600);
   Serial.println("Start");
   dht.begin();
@@ -29,7 +38,7 @@ void loop() {
   
   int photoresistor_value = analogRead(pResistor);
   
-  int soil_sensorValue = analogRead(A1);  //connect soil humidity sensor to analog A1
+  int soil_sensorValue = analogRead(soil_pin);  
   double final_soil_value = ((1024-soil_sensorValue)/1024.0) * 100;
 
   float pHVol;
@@ -56,21 +65,28 @@ void loop() {
   phValue = -5.56 * pHVol + 26.89;
 
   op = Serial.read();
-  if (op == '2'){
-//    Serial.print("The temperature now is: ");
+  if (op == DATA){
     Serial.println(temperature);
     Serial.println(temperature);
-//    Serial.print("The humidity now is: ");
     Serial.println(hum);
     Serial.println(hum);
-//    Serial.print("Photoresistor value: ");
     Serial.println(photoresistor_value);
-
-//    Serial.print("pH = ");
     Serial.println(phValue);
-    
-//    Serial.print("Soil humidity value: ");
     Serial.println(final_soil_value);
+  }
+  else if (op == FAN){
+    while(!Serial.available());
+    op = Serial.read();
+    if (op == '1'){ // open fan
+      digitalWrite(FAN_PIN, LOW);
+      Serial.println("1"); // success
+    }
+    else if (op == '0'){ // close fan
+      digitalWrite(FAN_PIN, HIGH);
+      Serial.println("1"); // success
+    }
+    else
+      Serial.println("0"); // failure
   }
   delay(5000);
 }
