@@ -25,7 +25,7 @@ op = None
 ############################    MAIN    ############################################
 def main():
     # set up the serial line
-    ser = serial.Serial('/dev/ttyACM0',
+    ser = serial.Serial('COM4',
                         9600)  # the first argument is the port name  (ex: COM3). Please check the port name in the device manager
     print(read_serial(ser))
     st = threading.Thread(target=read_stdin, args=()).start()
@@ -138,7 +138,17 @@ def sensor(ser, file_name, fieldnames, date, op):
                 'Ph': pH
             })
     elif op[0] == IDEAL:
-        pass
+        print(read_serial(ser))
+        ser.write(op.split("_")[1].encode())
+        print(float(read_serial(ser)))
+        ser.write(op.split("_")[2].encode())
+        print(float(read_serial(ser)))
+        ser.write(op.split("_")[3].encode())
+        print(float(read_serial(ser)))
+        ser.write(op.split("_")[4].encode())
+        print(int(read_serial(ser)))
+        ser.write(op.split("_")[5].encode())
+        print(int(read_serial(ser)))
     else:
         print("## Not good Argument!!!")
 

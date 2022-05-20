@@ -9,6 +9,13 @@
 #define DATA '2'
 #define IDEAL '3'
 
+//Initial
+float temperature_ideal = 25;
+float humidity_ideal =  50;
+int light_ideal = 500;
+int ph_ideal = 7.5;
+float soil_ideal = 50;
+
 //Constants
 const int pResistor = A3; // Photoresistor at Arduino analog pin A3
 const int pH_pin = A2;  // pH at Arduino analog pin A2
@@ -88,5 +95,26 @@ void loop() {
     else
       Serial.println("0"); // failure
   }
+  else if (op == IDEAL){
+    Serial.println("IDEAL");
+    while (!Serial.available());
+    temperature_ideal = Serial.parseFloat();
+    Serial.println(temperature_ideal);
+    while (!Serial.available());
+    humidity_ideal = Serial.parseFloat();
+    Serial.println(humidity_ideal);
+    while (!Serial.available());
+    soil_ideal = Serial.parseFloat();
+    Serial.println(soil_ideal);
+    
+    while (!Serial.available());
+    light_ideal = Serial.parseInt();
+    Serial.println(light_ideal);
+    while (!Serial.available());
+    ph_ideal = Serial.parseInt();
+    Serial.println(ph_ideal);
+    
+  }
+
   delay(5000);
 }
