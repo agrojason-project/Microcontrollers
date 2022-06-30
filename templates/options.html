@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+   <body>
+      <h1>Option</h1>
+
+      {% if error %}
+         <p><strong>Error:</strong> {{ error }}
+      {% endif %}
+      
+      <form action = "/options" method = "post">
+         <dl>
+            <dt>Opiton:</dt>
+            <dd>
+               <input type = text name = option>
+            </dd>
+         </dl>
+         <p><input type = submit value = Submit></p>
+      </form>
+   </body>
+</html>

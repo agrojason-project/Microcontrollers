@@ -1,35 +1,39 @@
+#! /usr/bin/env python3 
+from unittest import result
 import serial
 import csv
 import requests
 import socket
-
+# import os
 import threading
 from time import time
 from requests.exceptions import HTTPError
 from models.sensor_data import SensorData
 from auth.bearer import AuthBearer
 from utils.date import *
+from codex.en_de import *
+import logging
 
+logging.basicConfig(filename='example.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s')
 BASE_URL = "https://agrojason.herokuapp.com/api"
 USER_TOKEN = None
 USER_EMAIL = "a@a.com"
 USER_PASSWORD = "1234"
-mutex = threading.Lock()
 FAN = "1"
 DATA = "2"
 IDEAL = "3"
 
 op = None
+result = None 
 
 
 ############################    MAIN    ############################################
 def main():
     # set up the serial line
-    ser = serial.Serial('COM4',
+    ser = serial.Serial('/dev/ttyACM0',
                         9600)  # the first argument is the port name  (ex: COM3). Please check the port name in the device manager
-    print(read_serial(ser))
-    st = threading.Thread(target=read_stdin, args=()).start()
-    onl = threading.Thread(target=read_online, args=()).start()
+    logging.info(read_serial(ser))
+    threading.Thread(target=read_online, args=()).start()
     # initialize the date
     date = DateTime()
     # set up the csv file
@@ -45,8 +49,6 @@ def main():
     while True:
         if op != None:
             if op == "exit":
-                st.join(2)
-                onl.join(2)
                 break
             sensor(ser, file_name, fieldnames, date, op)
             op = None
@@ -64,36 +66,22 @@ def main():
 
 ##########################    FUNCTION    ##########################################
 
-def read_stdin():
-    while True:
-        global op
-        tmp = input()
-        mutex.acquire()
-        while op is not None:
-            pass
-        op = tmp
-        while op is not None:
-            pass
-        mutex.release()
-
-
 def read_online():
-    global op
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.bind(("", 12345))
-    client.listen()
+    global op, result
+    s = socket.socket()
+    s.bind(('', 12345))
+    s.listen()
     while True:
-        server, addr = client.accept()
-        tmp = server.recv(1024)
-        mutex.acquire()
+        c, addr = s.accept()
+        tmp = c.recv(1024)
         while op is not None:
             pass
-        op = tmp.decode()
+        op = my_decode(tmp)
+        result = None
         while op is not None:
             pass
-        server.sendall("OK".encode())
-        server.close()
-        mutex.release()
+        c.sendall(my_encode(result))
+        c.close()
 
 
 def read_serial(ser):  # read a string from the serial line
@@ -103,13 +91,14 @@ def read_serial(ser):  # read a string from the serial line
 
 
 def sensor(ser, file_name, fieldnames, date, op):
+    global result
     ser.write(op[0].encode())
     if op[0] == FAN:
         ser.write(op[1].encode())  # 0:Close, 1:Open
         if read_serial(ser):  # 0:Error, 1:Succeses
-            print("FAN Succeses!!")
+            result = "FAN Succeses!!"
         else:
-            print("FAN Error!!")
+            result = "FAN Error!!"
     elif op[0] == DATA:
         timestamp = date.get_utc_now()
         temperature_in = float(read_serial(ser))
@@ -137,20 +126,23 @@ def sensor(ser, file_name, fieldnames, date, op):
                 'Soil Moisture': humidity_substrate,
                 'Ph': pH
             })
+        result = "DATA Succeses!!"
     elif op[0] == IDEAL:
-        print(read_serial(ser))
+        result = None
+        result += read_serial(ser) + " "
         ser.write(op.split("_")[1].encode())
-        print(float(read_serial(ser)))
+        result += read_serial(ser) + " "
         ser.write(op.split("_")[2].encode())
-        print(float(read_serial(ser)))
+        result += read_serial(ser) + " "
         ser.write(op.split("_")[3].encode())
-        print(float(read_serial(ser)))
+        result += read_serial(ser) + " "
         ser.write(op.split("_")[4].encode())
-        print(int(read_serial(ser)))
+        result += read_serial(ser) + " "
         ser.write(op.split("_")[5].encode())
-        print(int(read_serial(ser)))
+        result += read_serial(ser) + " "
+        result += "IDEAL Succeses!!"
     else:
-        print("## Not good Argument!!!")
+       result ="## Not good Argument!!!"
 
 
 def send_data(sensorData: SensorData):
@@ -167,10 +159,10 @@ def login(email: str, password: str):
         res = requests.post(f"{BASE_URL}/users/login", data={"email": email, "password": password})
         res.raise_for_status()
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        logging.error(f'HTTP error occurred: {http_err}')
         return None
     except Exception as err:
-        print(f'Other error occurred: {err}')
+        logging.error(f'Other error occurred: {err}')
         return None
     else:
         global USER_TOKEN
@@ -182,13 +174,13 @@ def send_sensor_data(sensorData: SensorData):
         if (USER_TOKEN is None): return None
         res = requests.post(f"{BASE_URL}/sensors", data=vars(sensorData), auth=AuthBearer(USER_TOKEN))
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        logging.error(f'HTTP error occurred: {http_err}')
         return None
     except Exception as err:
-        print(f'Other error occurred: {err}')
+        logging.error(f'Other error occurred: {err}')
         return None
     else:
-        print(res.json())
+        logging.info(res.json())
 
 
 ######################    START THE PROGRAM    #####################################
